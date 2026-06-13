@@ -1,4 +1,4 @@
-import io, os, fitz, chromadb, traceback
+import io, os, re, fitz, chromadb, traceback
 from groq import Groq
 from pathlib import Path
 from contextlib import asynccontextmanager
@@ -16,12 +16,17 @@ groq_client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 MANUALS = Path("./manuals")
 
 
+def sanitize_name(stem: str) -> str:
+    name = re.sub(r'[^a-zA-Z0-9_-]', '_', stem)
+    return name.strip('_-')
+
+
 def chunk_text(text, size=500):
     return [text[i:i+size] for i in range(0, len(text), size) if text[i:i+size].strip()]
 
 
 def index_manual(path: Path):
-    name = path.stem
+    name = sanitize_name(path.stem)
     try:
         col = db.get_collection(name)
         if col.count() > 0:
@@ -53,7 +58,7 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 @app.get("/bikes")
 def get_bikes():
     return [
-        {"id": p.stem, "name": p.stem.replace("_", " ").replace("-", " ").title()}
+        {"id": sanitize_name(p.stem), "name": p.stem.replace("_", " ").replace("-", " ").title()}
         for p in MANUALS.glob("*.pdf")
     ]
 
