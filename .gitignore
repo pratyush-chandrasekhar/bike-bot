@@ -51,6 +51,7 @@ desktop.ini
 *.sqlite
 *.faiss
 vector_store/
+chroma_db/
 
 # Models / large files
 *.bin
