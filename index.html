@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bike Troubleshooter</title>
+  <style>
+    :root {
+      --bg:          #111827;
+      --bg-deep:     #0f172a;
+      --surface:     #1e293b;
+      --border:      #334155;
+      --text:        #cbd5e1;
+      --muted:       #94a3b8;
+      --accent:      #f59e0b;
+      --user-bubble: #d97706;
+      --radius:      14px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, sans-serif;
+      background: var(--bg);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      color: var(--text);
+    }
+
+    #app {
+      max-width: 700px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      width: 100%;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 16px;
+      background: var(--bg-deep);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    #title {
+      font-weight: 700;
+      font-size: 16px;
+      color: var(--accent);
+      letter-spacing: 0.02em;
+    }
+
+    #bikeSelect {
+      flex: 1;
+      max-width: 240px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    #bikeSelect:focus { border-color: var(--accent); }
+
+    #muteBtn {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      padding: 4px;
+      color: var(--muted);
+      transition: color 0.2s;
+    }
+
+    #muteBtn:hover { color: var(--accent); }
+
+    main#chat {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      background: var(--bg);
+    }
+
+    main#chat::-webkit-scrollbar { width: 4px; }
+    main#chat::-webkit-scrollbar-track { background: transparent; }
+    main#chat::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── User bubbles ── */
+    .msg.user {
+      align-self: flex-end;
+      max-width: 75%;
+      padding: 10px 14px;
+      font-size: 14px;
+      line-height: 1.65;
+      word-break: break-word;
+      background: var(--user-bubble);
+      color: #fff;
+      border-radius: var(--radius) 4px var(--radius) var(--radius);
+      animation: fadeUp 0.2s ease both;
+    }
+
+    /* ── Bot rows ── */
+    .msg-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      animation: fadeUp 0.2s ease both;
+    }
+
+    .bot-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .msg-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      max-width: calc(75% - 42px);
+    }
+
+    .msg.bot {
+      padding: 10px 14px;
+      font-size: 14px;
+      line-height: 1.65;
+      word-break: break-word;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 4px var(--radius) var(--radius) var(--radius);
+    }
+
+    .msg-citation {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 2px;
+    }
+
+    .citation-text {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.03em;
+    }
+
+    .replay-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--muted);
+      padding: 2px 4px;
+      border-radius: 4px;
+      line-height: 1;
+      transition: color 0.15s;
+    }
+
+    .replay-btn:hover { color: var(--accent); }
+
+    /* ── Typing indicator ── */
+    .msg-row#typing .typing-dots {
+      display: flex;
+      gap: 5px;
+      padding: 12px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px var(--radius) var(--radius) var(--radius);
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: bounce 1.2s infinite;
+    }
+
+    .dot:nth-child(2) { animation-delay: 0.2s; }
+    .dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes bounce {
+      0%, 80%, 100% { transform: translateY(0);    opacity: 0.5; }
+      40%            { transform: translateY(-6px); opacity: 1;   }
+    }
+
+    /* ── Footer / input bar ── */
+    footer {
+      padding: 12px 16px;
+      background: var(--bg-deep);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    #imgPreviewArea {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      padding: 6px 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+
+    #imgPreview {
+      height: 52px;
+      border-radius: 7px;
+      object-fit: cover;
+    }
+
+    #clearImgBtn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      color: var(--muted);
+      transition: color 0.15s;
+    }
+
+    #clearImgBtn:hover { color: #ef4444; }
+
+    #heardLabel {
+      display: none;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 8px;
+      padding: 0 4px;
+    }
+
+    #inputRow {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    #msgInput {
+      flex: 1;
+      padding: 11px 16px;
+      border-radius: 24px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    #msgInput::placeholder { color: var(--muted); }
+    #msgInput:focus { border-color: var(--accent); }
+
+    #sendBtn {
+      padding: 10px 20px;
+      background: var(--accent);
+      color: #111827;
+      border: none;
+      border-radius: 24px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      transition: background 0.2s, opacity 0.2s;
+    }
+
+    #sendBtn:hover    { background: #fbbf24; }
+    #sendBtn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    #micBtn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      width: 42px;
+      height: 42px;
+      cursor: pointer;
+      font-size: 18px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.2s;
+    }
+
+    #micBtn:hover { border-color: var(--accent); }
+
+    #micBtn.recording {
+      background: #ef4444;
+      border-color: #ef4444;
+      animation: pulse 1s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0   rgba(239,68,68,0.5); }
+      50%       { opacity: 0.8; box-shadow: 0 0 0 7px rgba(239,68,68,0); }
+    }
+
+    #imgBtn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      width: 42px;
+      height: 42px;
+      cursor: pointer;
+      font-size: 18px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      transition: border-color 0.2s;
+    }
+
+    #imgBtn:hover { border-color: var(--accent); }
+
+    #imgInput { display: none; }
+
+    /* ── Mobile ── */
+    @media (max-width: 700px) {
+      main#chat  { padding: 14px 10px; }
+      footer     { padding: 10px 10px; }
+      #sendBtn   { padding: 10px 14px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header>
+      <span id="title">🏍️ Bike Troubleshooter</span>
+      <select id="bikeSelect"><option value="">Select your bike...</option></select>
+      <button id="muteBtn" title="Toggle voice">🔊</button>
+    </header>
+
+    <main id="chat"></main>
+
+    <footer>
+      <div id="imgPreviewArea">
+        <img id="imgPreview" alt="attached image">
+        <button id="clearImgBtn">✕</button>
+      </div>
+      <div id="heardLabel"></div>
+      <div id="inputRow">
+        <button id="micBtn" title="Hold to speak">🎤</button>
+        <input id="msgInput" type="text" placeholder="Ask about your bike..." autocomplete="off">
+        <label for="imgInput" id="imgBtn" title="Attach image">📎</label>
+        <input id="imgInput" type="file" accept="image/*">
+        <button id="sendBtn">Send</button>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    let selectedBike = null;
+    let imageBase64 = null;
+    let isMuted = false;
+
+    const bikeSelect     = document.getElementById('bikeSelect');
+    const muteBtn        = document.getElementById('muteBtn');
+    const chat           = document.getElementById('chat');
+    const msgInput       = document.getElementById('msgInput');
+    const sendBtn        = document.getElementById('sendBtn');
+    const micBtn         = document.getElementById('micBtn');
+    const imgInput       = document.getElementById('imgInput');
+    const imgBtn         = document.getElementById('imgBtn');
+    const imgPreview     = document.getElementById('imgPreview');
+    const imgPreviewArea = document.getElementById('imgPreviewArea');
+    const clearImgBtn    = document.getElementById('clearImgBtn');
+
+    function appendMessage(role, text) {
+      if (role === 'user') {
+        const div = document.createElement('div');
+        div.className = 'msg user';
+        div.textContent = text;
+        chat.appendChild(div);
+      } else {
+        const row = document.createElement('div');
+        row.className = 'msg-row';
+
+        const avatar = document.createElement('div');
+        avatar.className = 'bot-avatar';
+        avatar.textContent = '🏍';
+
+        const wrap = document.createElement('div');
+        wrap.className = 'msg-wrap';
+
+        const div = document.createElement('div');
+        div.className = 'msg bot';
+        div.textContent = text;
+
+        const citation = document.createElement('div');
+        citation.className = 'msg-citation';
+
+        const citationText = document.createElement('span');
+        citationText.className = 'citation-text';
+        citationText.textContent = 'From manual';
+
+        const btn = document.createElement('button');
+        btn.className = 'replay-btn';
+        btn.textContent = '🔊';
+        btn.onclick = () => speak(text);
+
+        citation.appendChild(citationText);
+        citation.appendChild(btn);
+        wrap.appendChild(div);
+        wrap.appendChild(citation);
+        row.appendChild(avatar);
+        row.appendChild(wrap);
+        chat.appendChild(row);
+      }
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function showTyping() {
+      const row = document.createElement('div');
+      row.id = 'typing';
+      row.className = 'msg-row';
+
+      const avatar = document.createElement('div');
+      avatar.className = 'bot-avatar';
+      avatar.textContent = '🏍';
+
+      const dots = document.createElement('div');
+      dots.className = 'typing-dots';
+      for (let i = 0; i < 3; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'dot';
+        dots.appendChild(dot);
+      }
+
+      row.appendChild(avatar);
+      row.appendChild(dots);
+      chat.appendChild(row);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function hideTyping() {
+      const el = document.getElementById('typing');
+      if (el) el.remove();
+    }
+
+    async function loadBikes() {
+      const res = await fetch('/bikes');
+      const bikes = await res.json();
+      bikes.forEach(b => {
+        const opt = document.createElement('option');
+        opt.value = b.id;
+        opt.textContent = b.name;
+        bikeSelect.appendChild(opt);
+      });
+      if (bikes.length === 1) {
+        bikeSelect.value = bikes[0].id;
+        selectedBike = bikes[0].id;
+        appendMessage('bot', `Ready! Ask me anything about the ${bikes[0].name}. You can type, speak, or send an image.`);
+      }
+    }
+
+    async function sendMessage() {
+      const query = msgInput.value.trim();
+      if (!query || !selectedBike) return;
+
+      appendMessage('user', query + (imageBase64 ? ' 📷' : ''));
+      msgInput.value = '';
+      showTyping();
+
+      try {
+        console.log(imageBase64 ? "image attached" : "no image");
+        const res = await fetch('/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bike_id: selectedBike, query, image: imageBase64 })
+        });
+        const data = await res.json();
+        hideTyping();
+        appendMessage('bot', data.answer);
+        speak(data.answer);
+        clearImage();
+      } catch (err) {
+        hideTyping();
+        appendMessage('bot', 'Error: Could not reach server.');
+      }
+    }
+
+    function speak(text) {
+      if (isMuted || !window.speechSynthesis) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = navigator.language;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function toggleMute() {
+      isMuted = !isMuted;
+      muteBtn.textContent = isMuted ? '🔇' : '🔊';
+      if (isMuted) window.speechSynthesis.cancel();
+    }
+
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecording = false;
+
+    async function startRecording() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+        mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+        mediaRecorder.onstop = async () => {
+          const blob = new Blob(audioChunks, { type: 'audio/webm' });
+          const form = new FormData();
+          form.append('audio', blob, 'recording.webm');
+          micBtn.textContent = '⏳';
+          try {
+            const res = await fetch('/transcribe', { method: 'POST', body: form });
+            const data = await res.json();
+            if (data.transcript && data.transcript.trim()) {
+              const transcript = data.transcript.trim();
+              msgInput.value = transcript;
+              const heardLabel = document.getElementById('heardLabel');
+              heardLabel.textContent = 'Heard: ' + transcript;
+              heardLabel.style.display = 'block';
+              sendMessage();
+            }
+          } catch (e) {
+            appendMessage('bot', 'Could not transcribe. Please try again.');
+          }
+          micBtn.textContent = '🎤';
+        };
+        mediaRecorder.start();
+        isRecording = true;
+        micBtn.classList.add('recording');
+        micBtn.textContent = '⏹';
+      } catch (e) {
+        appendMessage('bot', 'Microphone access denied. Please allow microphone in browser settings.');
+      }
+    }
+
+    function stopRecording() {
+      if (mediaRecorder && isRecording) {
+        mediaRecorder.stop();
+        mediaRecorder.stream.getTracks().forEach(t => t.stop());
+        isRecording = false;
+        micBtn.classList.remove('recording');
+      }
+    }
+
+    function toggleRec() { isRecording ? stopRecording() : startRecording(); }
+    micBtn.onclick = toggleRec;
+
+    imgInput.onchange = e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      sendBtn.disabled = true;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          canvas.getContext('2d').drawImage(img, 0, 0);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          imageBase64 = dataUrl.split(',')[1];
+          imgPreview.src = dataUrl;
+          imgPreviewArea.style.display = 'flex';
+          sendBtn.disabled = false;
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    };
+
+    function clearImage() {
+      imageBase64 = null;
+      imgInput.value = '';
+      imgPreviewArea.style.display = 'none';
+    }
+
+    sendBtn.onclick = sendMessage;
+    msgInput.onkeydown = e => { if (e.key === 'Enter') sendMessage(); };
+    muteBtn.onclick = toggleMute;
+    clearImgBtn.onclick = clearImage;
+    bikeSelect.onchange = () => {
+      selectedBike = bikeSelect.value;
+      if (selectedBike) {
+        const name = bikeSelect.options[bikeSelect.selectedIndex].text;
+        appendMessage('bot', `Ready! Ask me anything about the ${name}. You can type, speak, or send an image.`);
+      }
+    };
+
+    loadBikes();
+  </script>
+</body>
+</html>
