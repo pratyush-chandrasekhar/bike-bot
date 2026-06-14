@@ -92,7 +92,7 @@ uvicorn main:app --reload
 
 ## 👨‍💻 Built By
 
-**Pratyush Chandrasekhar** — 3rd year BTech IT student
+**Pratyush Chandrasekhar** 
 
 ---
 
