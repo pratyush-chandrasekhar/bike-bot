@@ -524,8 +524,7 @@
       muteBtn.textContent = isMuted ? '🔇' : '🔊';
       if (isMuted && currentAudio) {
         currentAudio.pause();
-      } else if (!isMuted && currentAudio) {
-        currentAudio.play();
+        currentAudio = null;
       }
     }
 
