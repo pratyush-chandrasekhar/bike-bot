@@ -4,6 +4,7 @@ from pathlib import Path
 from contextlib import asynccontextmanager
 from typing import Optional
 from fastapi import FastAPI, UploadFile, File
+from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -193,14 +194,17 @@ def chat(req: ChatReq):
     raise
 
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
 @app.post("/speak")
 async def speak_text(body: dict):
     text = body.get("text", "")
     try:
         from gtts import gTTS
         from langdetect import detect
-        import io
-        from fastapi.responses import StreamingResponse
         try:
             lang = detect(text)
         except:
