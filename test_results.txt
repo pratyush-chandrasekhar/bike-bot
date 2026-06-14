@@ -1,0 +1,88 @@
+=================================================================
+  Bike Bot Live Test  |  2026-06-14 12:15:02
+  Target: https://bike-bot-production-83fc.up.railway.app
+=================================================================
+   [DEBUG] /bikes raw response: {'status': 'error', 'code': 502, 'message': 'Application failed to respond', 'request_id': 'FQad4bxOQeeJUTh7V7rehQ'}
+=================================================================
+❌  GET /bikes — 5 bikes returned
+   REQUEST : GET /bikes
+   RESPONSE: HTTP 502 | 0 bikes: []
+   STATUS  : FAIL — Expected 5 bike dicts, got 0 items: []
+=================================================================
+❌  POST /chat — English (in manual)
+   REQUEST : {"bike_id": "royal_enfield_bullet_650", "query": "what is the tyre pressure"}
+   RESPONSE: HTTP 502 | ...
+   STATUS  : FAIL — Answer too short or not found: 
+=================================================================
+❌  POST /chat — Out-of-manual question
+   REQUEST : {"bike_id": "royal_enfield_bullet_650", "query": "what is the price of the bike"}
+   RESPONSE: HTTP 502 | ...
+   STATUS  : FAIL — Expected 'not found' response, got: 
+=================================================================
+❌  POST /chat — Hindi Devanagari
+   REQUEST : {"bike_id": "royal_enfield_bullet_650", "query": "\u091f\u093e\u092f\u0930 \u092a\u094d\u0930\u0947\u0936\u0930 \u0915\u094d\u092f\u093e \u0939\u094b\u0928\u093e \u091a\u093e\u0939\u093f\u090f"}
+   RESPONSE: HTTP 502 | Hindi script: False | ...
+   STATUS  : FAIL — Response not in Hindi script (Devanagari). Answer: 
+=================================================================
+❌  POST /chat — Tamil
+   REQUEST : {"bike_id": "royal_enfield_bullet_650", "query": "\u0b9f\u0baf\u0bb0\u0bcd \u0b85\u0bb4\u0bc1\u0ba4\u0bcd\u0ba4\u0bae\u0bcd \u0b8e\u0ba9\u0bcd\u0ba9"}
+   RESPONSE: HTTP 502 | Tamil script: False | ...
+   STATUS  : FAIL — Response not in Tamil script. Answer: 
+=================================================================
+❌  POST /chat — Arabic
+   REQUEST : {"bike_id": "royal_enfield_bullet_650", "query": "\u0645\u0627 \u0647\u0648 \u0636\u063a\u0637 \u0627\u0644\u0625\u0637\u0627\u0631\u0627\u062a"}
+   RESPONSE: HTTP 502 | Arabic script: False | ...
+   STATUS  : FAIL — Response not in Arabic script. Answer: 
+=================================================================
+❌  POST /chat — Vague/inference question
+   REQUEST : {"bike_id": "royal_enfield_bullet_650", "query": "my bike is making strange noise what should I do"}
+   RESPONSE: HTTP 502 | ...
+   STATUS  : FAIL — Expected substantive answer, got: 
+=================================================================
+❌  POST /chat — Image upload (1×1 JPEG)
+   REQUEST : {"bike_id":"royal_enfield_bullet_650","query":"what does this show","image":"<base64>"}
+   RESPONSE: HTTP 502 | ...
+   STATUS  : FAIL — Expected answer with image, got: 
+=================================================================
+❌  POST /transcribe — Silent audio blob
+   REQUEST : POST /transcribe (200ms silent WAV as audio/webm)
+   RESPONSE: HTTP 502 | {'status': 'error', 'code': 502, 'message': 'Application failed to respond', 'request_id': '6aqxB7HIRi2mFyY0VOLIQQ'}
+   STATUS  : FAIL — HTTP 502
+=================================================================
+❌  POST /speak — gTTS audio response
+   REQUEST : {"text": "hello this is a test"}
+   RESPONSE: HTTP 502 | Content-Type: application/json | 109 bytes
+   STATUS  : FAIL — Expected audio/mpeg with content, got application/json, 109 bytes
+=================================================================
+❌  GET /health — health check endpoint
+   REQUEST : GET /health
+   RESPONSE: HTTP 502
+   STATUS  : FAIL — HTTP 502 — endpoint not implemented
+=================================================================
+  RESULTS: 0 passed, 11 failed  (total 11)
+=================================================================
+
+  BUGS FOUND:
+  1. [GET /bikes — 5 bikes returned] Expected 5 bike dicts, got 0 items: []
+  2. [POST /chat — English (in manual)] Answer too short or not found: 
+  3. [POST /chat — Out-of-manual question] Expected 'not found' response, got: 
+  4. [POST /chat — Hindi Devanagari] Response not in Hindi script (Devanagari). Answer: 
+  5. [POST /chat — Tamil] Response not in Tamil script. Answer: 
+  6. [POST /chat — Arabic] Response not in Arabic script. Answer: 
+  7. [POST /chat — Vague/inference question] Expected substantive answer, got: 
+  8. [POST /chat — Image upload (1×1 JPEG)] Expected answer with image, got: 
+  9. [POST /transcribe — Silent audio blob] HTTP 502
+  10. [POST /speak — gTTS audio response] Expected audio/mpeg with content, got application/json, 109 bytes
+  11. [GET /health — health check endpoint] HTTP 502 — endpoint not implemented
+
+  SUGGESTED FIXES:
+  → Bikes: verify all 5 PDFs are present and indexed in manuals/
+  → Out-of-manual: tighten system prompt rule #4 to refuse more firmly
+  → Hindi: check Devanagari range 0x0900–0x097F in detect_language()
+  → Tamil: verify detect_language() range and system prompt enforcement
+  → Arabic: same as Tamil — check script detection ranges
+  → Image: check vision model fallback and base64 decoding in /chat
+  → Transcribe: Groq Whisper may reject non-WebM audio; check error handling
+  → Speak: check gTTS install on Railway and /speak endpoint in main.py
+  → Add GET /health endpoint to main.py returning {"status": "ok"}
+=================================================================
