@@ -540,10 +540,10 @@
             if (data.transcript && data.transcript.trim()) {
               const transcript = data.transcript.trim();
               msgInput.value = transcript;
+              msgInput.focus();
               const heardLabel = document.getElementById('heardLabel');
               heardLabel.textContent = 'Heard: ' + transcript;
               heardLabel.style.display = 'block';
-              sendMessage();
             }
           } catch (e) {
             appendMessage('bot', 'Could not transcribe. Please try again.');
