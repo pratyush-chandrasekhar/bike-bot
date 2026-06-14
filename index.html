@@ -406,6 +406,7 @@
         const div = document.createElement('div');
         div.className = 'msg bot';
         div.textContent = text;
+        div.dataset.fullText = text;
 
         const citation = document.createElement('div');
         citation.className = 'msg-citation';
@@ -417,7 +418,7 @@
         const btn = document.createElement('button');
         btn.className = 'replay-btn';
         btn.textContent = '🔊';
-        btn.onclick = () => speak(text);
+        btn.onclick = () => speak(div.dataset.fullText);
 
         citation.appendChild(citationText);
         citation.appendChild(btn);
