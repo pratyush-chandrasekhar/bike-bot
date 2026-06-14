@@ -503,10 +503,14 @@
 
     function speak(text) {
       if (isMuted || !window.speechSynthesis) return;
+      console.log("Speaking:", text.substring(0, 50));
       window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = navigator.language;
-      window.speechSynthesis.speak(utterance);
+      setTimeout(() => {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = navigator.language;
+        utterance.rate = 0.9;
+        window.speechSynthesis.speak(utterance);
+      }, 100);
     }
 
     function toggleMute() {
