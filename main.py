@@ -193,4 +193,26 @@ def chat(req: ChatReq):
     raise
 
 
+@app.post("/speak")
+async def speak_text(body: dict):
+    text = body.get("text", "")
+    try:
+        from gtts import gTTS
+        from langdetect import detect
+        import io
+        from fastapi.responses import StreamingResponse
+        try:
+            lang = detect(text)
+        except:
+            lang = "en"
+        tts = gTTS(text=text, lang=lang, slow=False)
+        audio_buffer = io.BytesIO()
+        tts.write_to_fp(audio_buffer)
+        audio_buffer.seek(0)
+        return StreamingResponse(audio_buffer, media_type="audio/mpeg")
+    except Exception as e:
+        print(f"TTS error: {e}")
+        return {"error": str(e)}
+
+
 app.mount("/", StaticFiles(directory=".", html=True), name="static")

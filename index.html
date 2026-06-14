@@ -373,6 +373,7 @@
     let selectedBike = null;
     let imageBase64 = null;
     let isMuted = false;
+    let currentAudio = null;
 
     const bikeSelect     = document.getElementById('bikeSelect');
     const muteBtn        = document.getElementById('muteBtn');
@@ -501,22 +502,31 @@
       }
     }
 
-    function speak(text) {
-      if (isMuted || !window.speechSynthesis) return;
-      console.log("Speaking:", text.substring(0, 50));
-      window.speechSynthesis.cancel();
-      setTimeout(() => {
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = navigator.language;
-        utterance.rate = 0.9;
-        window.speechSynthesis.speak(utterance);
-      }, 100);
+    async function speak(text) {
+      if (isMuted) return;
+      if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+      try {
+        const res = await fetch('/speak', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({text})
+        });
+        const blob = await res.blob();
+        currentAudio = new Audio(URL.createObjectURL(blob));
+        currentAudio.play();
+      } catch(e) {
+        console.error('TTS error:', e);
+      }
     }
 
     function toggleMute() {
       isMuted = !isMuted;
       muteBtn.textContent = isMuted ? '🔇' : '🔊';
-      if (isMuted) window.speechSynthesis.cancel();
+      if (isMuted && currentAudio) {
+        currentAudio.pause();
+      } else if (!isMuted && currentAudio) {
+        currentAudio.play();
+      }
     }
 
     let mediaRecorder = null;

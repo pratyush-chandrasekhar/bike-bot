@@ -5,3 +5,5 @@ chromadb
 groq
 python-dotenv
 python-multipart
+gtts
+langdetect
