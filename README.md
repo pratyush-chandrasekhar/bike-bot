@@ -94,8 +94,3 @@ uvicorn main:app --reload
 
 **Pratyush Chandrasekhar** 
 
----
-
-## 🤖 Built With Claude Code
-
-This project was built using [Claude Code](https://claude.ai/code) (Anthropic's AI coding assistant) as part of learning how to build AI-powered applications. The architecture, debugging, deployment, and all technical decisions were made collaboratively through the development process.
